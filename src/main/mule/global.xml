@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:secure-properties="http://www.mulesoft.org/schema/mule/secure-properties"
+	xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/secure-properties http://www.mulesoft.org/schema/mule/secure-properties/current/mule-secure-properties.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:request-config name="HTTP_Request_configuration" doc:name="HTTP Request configuration" doc:id="8fa1df34-12d5-4efb-967f-e778f77b8b66" basePath="${walmart.basepath}" >
+		<http:request-connection protocol="HTTPS" host="${walmart.host}" port="${walmart.port}" />
+	</http:request-config>
+	<db:config name="Database_Config" doc:name="Database Config" doc:id="f33f185d-12b7-4374-829c-dfbdd2ca1c34" >
+		<db:my-sql-connection host="${db.host}" port="${db.port}" user="${db.user}" password="${secure::db.password}" database="${db.database}" />
+	</db:config>
+	<configuration-properties doc:name="Configuration properties" doc:id="3bd3027d-e3fa-4b4b-92c2-14d33fa46dc4" file="config.yaml" />
+	<secure-properties:config name="Secure_Properties_Config" doc:name="Secure Properties Config" doc:id="464ad101-189f-4683-ad66-7d5ca53d19d9" file="config.yaml" key="password12345678" />
+	<error-handler name="globalError_Handler" doc:id="caabd251-6340-48c5-b1e2-04053df6b0cb" >
+		<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="4731e4ea-85a0-4689-9f52-b24b76e34474" type="DB:BAD_SQL_SYNTAX, DB:CONNECTIVITY, DB:QUERY_EXECUTION" >
+			<set-payload value="Issues connecting with database" doc:name="Set Payload" doc:id="49f8c144-57ae-4d1c-9344-f72e9c8b2e08" />
+			<set-variable value="500" doc:name="httpStatus" doc:id="eb0a5627-d7bd-448d-bf4e-f670113c4d1c" variableName="httpStatus" />
+		</on-error-continue>
+		<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="c6dc54ec-5a56-41e3-920c-0ab2c505bdc8" type="ANY" >
+			<ee:transform doc:name="Error Description" doc:id="72f81885-e8d3-42cc-a6b7-64eed6df5b5e" >
+				<ee:message >
+					<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"Message": error.description
+}]]></ee:set-payload>
+				</ee:message>
+			</ee:transform>
+		</on-error-propagate>
+	</error-handler>
+</mule>
